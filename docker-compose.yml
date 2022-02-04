@@ -1,0 +1,220 @@
+version: "3"
+
+# https://github.com/pi-hole/docker-pi-hole/blob/master/README.md
+networks:
+  private_network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.2.0.0/24
+
+services:
+  nginx-proxy:
+    container_name: nginx-proxy
+    image: nginxproxy/nginx-proxy
+    ports:
+      - '80:80'
+    environment:
+      DEFAULT_HOST: pihole.odroid.lan
+    volumes:
+      - '/var/run/docker.sock:/tmp/docker.sock'
+    restart: always
+    networks:
+      - private_network
+    logging:
+      driver: "json-file"
+      options:
+        max-file: 5
+        max-size: 10m
+
+  pihole:
+    depends_on: [unbound]
+    container_name: pihole
+    image: pihole/pihole:latest
+    dns:
+      - 127.0.0.1
+      - 10.2.0.200
+    ports:
+      - '53:53/tcp'
+      - '53:53/udp'
+      - "67:67/udp"
+      - '8080:80/tcp'
+    volumes:
+      - './etc-pihole:/etc/pihole'
+      - './etc-dnsmasq.d:/etc/dnsmasq.d'
+      # run `touch ./var-log/pihole.log` first unless you like errors
+      # - './var-log/pihole.log:/var/log/pihole.log'
+    # Recommended but not required (DHCP needs NET_ADMIN)
+    #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+    cap_add:
+      - NET_ADMIN
+    environment:
+      ServerIP: 192.168.1.158
+      DNS1: 10.2.0.200 
+      DNS2: 10.2.0.200 
+      PROXY_LOCATION: pihole
+      VIRTUAL_HOST: pihole.odroid.lan
+      VIRTUAL_PORT: 80
+    extra_hosts:
+      # LAN hostnames for other docker containers using nginx-proxy
+      - 'odroid.lan:192.168.1.158'
+      - 'pihole pihole.odroid.lan:192.168.1.158'
+      - 'plex plex.odroid.lan:192.168.1.158'
+      - 'transmission transmission.odroid.lan:192.168.1.158'
+      - 'portainer portainer.odroid.lan:192.168.1.158'
+    restart: always
+    dns:
+      - 127.0.0.1
+      - 10.2.0.200
+    networks:
+      private_network:
+        ipv4_address: 10.2.0.100
+    logging:
+      driver: "json-file"
+      options:
+        max-file: 5
+        max-size: 10m
+
+  plex:
+    container_name: plex
+    image: lscr.io/linuxserver/plex:latest 
+    restart: unless-stopped
+    ports:
+      - 32400:32400/tcp
+      - 3005:3005/tcp
+      - 8324:8234/tcp
+      - 32469:32469/tcp
+      - 1900:1900/udp
+      - 32410:32410/udp
+      - 32412:32412/udp
+      - 32413:32413/udp
+      - 32414:32414/udp
+    environment:
+      TZ: 'America/New_York'
+      PLEX_CLAIM: ${PLEX_CLAIM} 
+      ADVERTISE_IP: http://192.168.1.158:32400/
+      PROXY_LOCATION: plex
+      VIRTUAL_HOST: plex.odroid.lan
+      VIRTUAL_PORT: 32400
+      PLEX_UID: 1000
+      PLEX_GID: 1000
+    hostname: odroid
+    volumes:
+      - /media/nas/hdd1/plex/config:/config
+      - /media/nas/hdd1/plex/transcode:/transcode
+      - /media/nas/hdd1/transmission/Movies:/data/Movies
+      - /media/nas/hdd1/transmission/TV:/data/TV
+    networks:
+      - private_network
+    logging:
+      driver: "json-file"
+      options:
+        max-file: 5
+        max-size: 10m
+
+  unbound:
+    image: "mvance/unbound-rpi:latest"
+    container_name: unbound
+    restart: unless-stopped
+    hostname: "unbound"
+    volumes:
+      - "./unbound:/opt/unbound/etc/unbound/"
+    networks:
+      private_network:
+        ipv4_address: 10.2.0.200
+    logging:
+      driver: "json-file"
+      options:
+        max-file: 5
+        max-size: 10m
+
+  wireguard:
+    depends_on: [unbound, pihole]
+    image: linuxserver/wireguard
+    container_name: wireguard
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+      - SERVERPORT=51820
+      - SERVERURL=kunginator.duckdns.org
+      - PEERS=3 # How many peers to generate for you (clients)
+      - PEERDNS=10.2.0.100
+      - INTERNAL_SUBNET=10.6.0.0
+      
+    volumes:
+      - ./wireguard:/config
+      - /lib/modules:/lib/modules
+    ports:
+      - "51820:51820/udp"
+    dns:
+      - 10.2.0.100 # Points to pihole
+      - 10.2.0.200 # Points to unbound
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+
+    restart: unless-stopped
+    networks:
+      - private_network
+    logging:
+      driver: "json-file"
+      options:
+        max-file: 5
+        max-size: 10m
+
+  transmission-openvpn:
+      container_name: transmission-openvpn
+      cap_add:
+          - NET_ADMIN
+      volumes:
+          - '/media/nas/hdd1/transmission:/data'
+          - '/media/nas/hdd1/transmission/config/:/config'
+      environment:
+        OPENVPN_PROVIDER: VPNUNLIMITED
+        OPENVPN_CONFIG: ca-tr,fr,ro
+        OPENVPN_USERNAME: ${OPENVPN_USERNAME}
+        OPENVPN_PASSWORD: ${OPENVPN_PASSWORD} 
+        LOCAL_NETWORK: 192.168.0.0/16,10.6.0.2/32
+        TRANSMISSION_WEB_UI: combustion
+        PROXY_LOCATION: transmission 
+        VIRTUAL_HOST: transmission.odroid.lan
+        VIRTUAL_PORT: 9091
+      ports:
+          - '9091:9091'
+      image: haugene/transmission-openvpn:4.2
+      networks:
+        - private_network
+      logging:
+        driver: "json-file"
+        options:
+          max-file: 5
+          max-size: 10m
+          
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./portainer-data:/data
+    environment:
+      PROXY_LOCATION: portainer
+      VIRTUAL_HOST: portainer.odroid.lan
+      VIRTUAL_PORT: 9000
+    ports:
+      - 9000:9000
+    networks:
+      - private_network
+    logging:
+      driver: "json-file"
+      options:
+        max-file: 5
+        max-size: 10m
+
+
