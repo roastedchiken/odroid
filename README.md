@@ -4,6 +4,11 @@ Here's my current dockerfile setup to get all of these service working together.
 include tailscale or some other way to allow for external connections (let family/friends torrent
 and or watch things)
 
+Here's some helpful links to the services this dockerfile uses:
+[duckdns](https://www.duckdns.org/)
+[transmission-openvpn](https://github.com/haugene/docker-transmission-openvpn)
+[wireguard](https://github.com/linuxserver/docker-wireguard) (The section on showing QR codes for peers is pretty useful)
+
 ### Dependencies
 There are two additional things that are needed for this to be run
 
