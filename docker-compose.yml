@@ -11,7 +11,7 @@ networks:
 services:
   nginx-proxy:
     container_name: nginx-proxy
-    image: nginxproxy/nginx-proxy
+    image: nginxproxy/nginx-proxy:2561
     ports:
       - '80:80'
     environment:
