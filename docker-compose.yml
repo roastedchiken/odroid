@@ -142,6 +142,7 @@ services:
       volumes:
           - '/media/nas/hdd1/transmission:/data'
           - '/media/nas/hdd1/transmission/config/:/config'
+          - '/vpn-configs-contrib/.git:/.git'
       environment:
         OPENVPN_PROVIDER: VPNUNLIMITED
         OPENVPN_CONFIG: ca-tr,fr,ro
@@ -160,21 +161,19 @@ services:
         - private_network
           
   portainer:
-    image: portainer/portainer-ce:latest
+    image: portainer/portainer-ce:lts
     container_name: portainer
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock
       - ./portainer-data:/data
     environment:
       PROXY_LOCATION: portainer
       VIRTUAL_HOST: portainer.nucbox.lan
-      VIRTUAL_PORT: 9000
+      VIRTUAL_PORT: 9443
     ports:
-      - 9000:9000
+      - 9443:9443
     networks:
       - private_network
 
