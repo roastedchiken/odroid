@@ -21,11 +21,6 @@ services:
     restart: always
     networks:
       - private_network
-    logging:
-      driver: "json-file"
-      options:
-        max-file: 5
-        max-size: 10m
 
   pihole:
     depends_on: [unbound]
@@ -50,7 +45,9 @@ services:
       WEB_PASSWORD: ${PIHOLE_PASSWORD}
       FTLCONF_LOCAL_IPV4: 192.168.1.161
       PIHOLE_DNS_: 10.2.0.200 
+      PROXY_LOCATION: pihole
       VIRTUAL_HOST: pihole.nucbox.lan
+      VIRTUAL_PORT: 80
     extra_hosts:
       # LAN hostnames for other docker containers using nginx-proxy
       - 'nucbox.lan:192.168.1.161'
@@ -62,16 +59,13 @@ services:
     networks:
       private_network:
         ipv4_address: 10.2.0.100
-    logging:
-      driver: "json-file"
-      options:
-        max-file: 5
-        max-size: 10m
 
   plex:
     container_name: plex
     image: lscr.io/linuxserver/plex:latest 
     restart: unless-stopped
+    devices:
+      - /dev/dri:/dev/dri
     ports:
       - 32400:32400/tcp
       - 3005:3005/tcp
@@ -84,26 +78,21 @@ services:
       - 32414:32414/udp
     environment:
       TZ: 'America/New_York'
-      PLEX_CLAIM: ${PLEX_CLAIM} 
-      ADVERTISE_IP: http://192.168.1.161:32400/
-      PROXY_LOCATION: plex
       VIRTUAL_HOST: plex.nucbox.lan
       VIRTUAL_PORT: 32400
       PLEX_UID: 1000
       PLEX_GID: 1000
+      VERSION: latest
+      PLEX_CLAIM: ${PLEX_CLAIM}
     hostname: nucbox
     volumes:
       - /media/nas/hdd1/plex/config:/config
       - /media/nas/hdd1/plex/transcode:/transcode
       - /media/nas/hdd1/transmission/Movies:/data/Movies
       - /media/nas/hdd1/transmission/TV:/data/TV
+      - /media/nas/hdd1/transmission/Music:/data/Music
     networks:
       - private_network
-    logging:
-      driver: "json-file"
-      options:
-        max-file: 5
-        max-size: 10m
 
   unbound:
     image: "mvance/unbound:latest"
@@ -145,11 +134,6 @@ services:
     restart: unless-stopped
     networks:
       - private_network
-    logging:
-      driver: "json-file"
-      options:
-        max-file: 5
-        max-size: 10m
 
   transmission-openvpn:
       container_name: transmission-openvpn
@@ -168,16 +152,12 @@ services:
         PROXY_LOCATION: transmission 
         VIRTUAL_HOST: transmission.nucbox.lan
         VIRTUAL_PORT: 9091
+        GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
       ports:
           - '9091:9091'
       image: haugene/transmission-openvpn:latest
       networks:
         - private_network
-      logging:
-        driver: "json-file"
-        options:
-          max-file: 5
-          max-size: 10m
           
   portainer:
     image: portainer/portainer-ce:latest
@@ -197,10 +177,5 @@ services:
       - 9000:9000
     networks:
       - private_network
-    logging:
-      driver: "json-file"
-      options:
-        max-file: 5
-        max-size: 10m
 
 
