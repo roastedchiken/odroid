@@ -148,6 +148,7 @@ services:
         OPENVPN_CONFIG: ca-tr,fr,ro
         OPENVPN_USERNAME: ${OPENVPN_USERNAME}
         OPENVPN_PASSWORD: ${OPENVPN_PASSWORD} 
+        GITHUB_CONFIG_SOURCE_REPO: roastedchiken/vpn-configs-contrib
         LOCAL_NETWORK: 192.168.0.0/16,10.6.0.2/32
         TRANSMISSION_WEB_UI: combustion
         PROXY_LOCATION: transmission 
@@ -171,9 +172,9 @@ services:
     environment:
       PROXY_LOCATION: portainer
       VIRTUAL_HOST: portainer.nucbox.lan
-      VIRTUAL_PORT: 9443
+      VIRTUAL_PORT: 9000
     ports:
-      - 9443:9443
+      - 9000:9000
     networks:
       - private_network
 
