@@ -1,12 +1,19 @@
 version: "3"
 
-# https://github.com/pi-hole/docker-pi-hole/blob/master/README.md
 networks:
   private_network:
     ipam:
       driver: default
       config:
         - subnet: 10.2.0.0/24
+
+secrets:
+  pihole_password:
+    file: pihole/password.txt
+  plex_claim:
+    file: plex/claim.txt
+  openvpn_creds:
+    file: openvpn/creds.txt
 
 services:
   nginx-proxy:
@@ -32,22 +39,20 @@ services:
       - "67:67/udp"
       - '8080:80/tcp'
     volumes:
-      - './etc-pihole:/etc/pihole'
-      - './etc-dnsmasq.d:/etc/dnsmasq.d'
-      # run `touch ./var-log/pihole.log` first unless you like errors
-      # - './var-log/pihole.log:/var/log/pihole.log'
-    # Recommended but not required (DHCP needs NET_ADMIN)
-    #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+      - './pihole/etc-pihole:/etc/pihole'
+      - './pihole/etc-dnsmasq.d:/etc/dnsmasq.d'
     cap_add:
       - NET_ADMIN
     environment:
       TZ: 'America/New_York'
-      WEBPASSWORD: ${PIHOLE_PASSWORD}
+      WEBPASSWORD_FILE: /run/secrets/pihole_password 
       FTLCONF_LOCAL_IPV4: 192.168.1.161
       PIHOLE_DNS_: 10.2.0.200 
       PROXY_LOCATION: pihole
       VIRTUAL_HOST: pihole.nucbox.lan
       VIRTUAL_PORT: 80
+    secrets:
+      - pihole_password
     extra_hosts:
       # LAN hostnames for other docker containers using nginx-proxy
       - 'nucbox.lan:192.168.1.161'
@@ -83,7 +88,9 @@ services:
       PLEX_UID: 1000
       PLEX_GID: 1000
       VERSION: latest
-      PLEX_CLAIM: ${PLEX_CLAIM}
+      FILE__PLEX_CLAIM: /run/secrets/plex_claim
+    secrets:
+      - plex_claim
     hostname: nucbox
     volumes:
       - /media/nas/hdd1/plex/config:/config
@@ -146,15 +153,14 @@ services:
       environment:
         OPENVPN_PROVIDER: VPNUNLIMITED
         OPENVPN_CONFIG: ca-tr,fr,ro
-        OPENVPN_USERNAME: ${OPENVPN_USERNAME}
-        OPENVPN_PASSWORD: ${OPENVPN_PASSWORD} 
         GITHUB_CONFIG_SOURCE_REPO: roastedchiken/vpn-configs-contrib
         LOCAL_NETWORK: 192.168.0.0/16,10.6.0.2/32
         TRANSMISSION_WEB_UI: combustion
         PROXY_LOCATION: transmission 
         VIRTUAL_HOST: transmission.nucbox.lan
         VIRTUAL_PORT: 9091
-        GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
+      secrets:
+        - openvpn_creds
       ports:
           - '9091:9091'
       image: haugene/transmission-openvpn:latest
