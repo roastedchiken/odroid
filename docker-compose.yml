@@ -19,13 +19,16 @@ secrets:
 
 services:
   duckdns:
-    image: lscr.io/linuxserver/duckdns:latest
+    image: 'lscr.io/linuxserver/duckdns:latest'
     container_name: duckdns
     environment:
-      - TZ=America/New_York
-      - SUBDOMAINS=kunginator
-      - FILE__TOKEN=/run/secrets/duckdns_token
+      TZ: America/New_York
+      SUBDOMAINS: kunginator
+      FILE__TOKEN: /run/secrets/duckdns_token
     restart: unless-stopped
+    secrets:
+      - duckdns_token
+
   nginx-proxy-manager:
     container_name: nginx-proxy-manager
     image: 'jc21/nginx-proxy-manager:latest' 
