@@ -79,6 +79,7 @@ services:
       PLEX_UID: 1000
       PLEX_GID: 1000
       VERSION: latest
+      ADVERTISE_IP: "http://192.168.1.161:32400/"
       FILE__PLEX_CLAIM: /run/secrets/plex_claim
     secrets:
       - plex_claim
