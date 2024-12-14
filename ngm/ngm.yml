@@ -26,6 +26,8 @@ services:
       - 32414:32414/udp
       # wireguard
       - 51820:51820/udp
+      # immich
+      - 2283:2283
     volumes:
       - ./data:/data
       - ./letsencrypt:/etc/letsencrypt

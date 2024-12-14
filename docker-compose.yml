@@ -8,5 +8,6 @@ include:
   - path: 'plex/plex.yml'
   - path: 'transmission/transmission.yml'
   - path: 'portainer/portainer.yml'
+  - path: 'immich/immich.yml'
   - path: 'commons.yml'
 
