@@ -1,0 +1,7 @@
+*
+!*/
+!*.yml
+!*.gitattributes
+!*.gitignore
+!*.md
+ngm/letsencrypt

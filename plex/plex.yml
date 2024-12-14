@@ -1,0 +1,32 @@
+version: "3"
+
+secrets:
+  plex_claim:
+    file: claim.txt
+
+services:
+  
+  plex:
+    container_name: plex
+    image: lscr.io/linuxserver/plex:latest 
+    restart: unless-stopped
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      TZ: 'America/New_York'
+      PLEX_UID: 1000
+      PLEX_GID: 1000
+      VERSION: latest
+      ADVERTISE_IP: "http://192.168.1.161:32400/"
+      FILE__PLEX_CLAIM: /run/secrets/plex_claim
+    secrets:
+      - plex_claim
+    hostname: nucbox
+    volumes:
+      - /media/nas/hdd1/plex/config:/config
+      - /media/nas/hdd1/plex/transcode:/transcode
+      - /media/nas/hdd1/transmission/Movies:/data/Movies
+      - /media/nas/hdd1/transmission/TV:/data/TV
+      - /media/nas/hdd1/transmission/Music:/data/Music
+    networks:
+      - reverse-proxy

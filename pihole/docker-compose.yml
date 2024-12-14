@@ -1,0 +1,7 @@
+version: '3'
+
+name: 'nucbox'
+
+include:
+  - path: unboundpiguard.yml
+  - path: ../commons.yml

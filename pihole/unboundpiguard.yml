@@ -1,0 +1,65 @@
+version: '3'
+
+secrets:
+  pihole_password:
+    file: password.txt
+
+services:
+  unbound:
+    image: "mvance/unbound:latest"
+    container_name: unbound
+    restart: unless-stopped
+    hostname: "unbound"
+    networks:
+      reverse-proxy: 
+        ipv4_address: 10.2.0.200
+        
+  pihole:
+    depends_on: [unbound]
+    container_name: pihole
+    image: pihole/pihole:latest
+    volumes:
+      - './pihole/etc-pihole:/etc/pihole'
+      - './pihole/etc-dnsmasq.d:/etc/dnsmasq.d'
+    cap_add:
+      - NET_ADMIN
+    environment:
+      TZ: 'America/New_York'
+      WEBPASSWORD_FILE: /run/secrets/pihole_password 
+      FTLCONF_LOCAL_IPV4: 192.168.1.161
+      PIHOLE_DNS_: 10.2.0.200 
+    secrets:
+      - pihole_password
+    restart: always
+    networks:
+      - reverse-proxy
+
+  wireguard:
+    depends_on: 
+      - pihole
+    image: linuxserver/wireguard
+    container_name: wireguard
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+      - SERVERPORT=51820
+      - SERVERURL=kunginator.duckdns.org
+      - PEERS=3 # How many peers to generate for you (clients)
+      - PEERDNS=10.2.0.100
+      - INTERNAL_SUBNET=10.6.0.0
+      
+    volumes:
+      - ./wireguard:/config
+      - /lib/modules:/lib/modules
+    dns:
+      - 10.2.0.100 # Points to pihole
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+
+    restart: unless-stopped
+    networks:
+      - reverse-proxy 
