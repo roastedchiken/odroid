@@ -1,0 +1,26 @@
+version: '3'
+
+secrets:
+  openvpn_creds:
+    file: openvpn/creds.txt
+
+services:
+  transmission:
+      container_name: transmission
+      cap_add:
+          - NET_ADMIN
+      volumes:
+          - '/media/nas/hdd1/transmission:/data'
+          - '/media/nas/hdd1/transmission/config/:/config'
+          - '/vpn-configs-contrib/.git:/.git'
+      environment:
+        OPENVPN_PROVIDER: VPNUNLIMITED
+        OPENVPN_CONFIG: ca-tr,fr,ro
+        GITHUB_CONFIG_SOURCE_REPO: roastedchiken/vpn-configs-contrib
+        LOCAL_NETWORK: 192.168.0.0/16,10.6.0.2/32
+        TRANSMISSION_WEB_UI: combustion
+      secrets:
+        - openvpn_creds
+      image: haugene/transmission-openvpn:latest
+      networks:
+        - reverse-proxy 
