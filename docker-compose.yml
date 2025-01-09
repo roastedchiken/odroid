@@ -3,6 +3,7 @@ version: '3'
 name: 'nucbox'
 
 include:
+  - path: 'duckdns/docker-compose.yml'
   - path: 'pihole/unboundpiguard.yml'
   - path: 'ngm/ngm.yml'
   - path: 'plex/plex.yml'
