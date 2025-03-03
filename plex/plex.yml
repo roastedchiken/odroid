@@ -28,5 +28,6 @@ services:
       - /media/nas/hdd1/transmission/Movies:/data/Movies
       - /media/nas/hdd1/transmission/TV:/data/TV
       - /media/nas/hdd1/transmission/Music:/data/Music
+      - /media/nas/hdd1/transmission/Misc:/data/Miscc
     networks:
       - reverse-proxy

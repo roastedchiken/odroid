@@ -22,5 +22,6 @@ services:
       secrets:
         - openvpn_creds
       image: haugene/transmission-openvpn:latest
+      privileged: true
       networks:
         - reverse-proxy 
